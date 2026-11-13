@@ -1,0 +1,102 @@
+import { mkdirSync, mkdtempSync, symlinkSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
+import { describe, expect, it } from "vitest";
+import { checkToolCall, isForbiddenPath } from "../../.agents/guard/rules";
+
+const root = mkdtempSync(join(tmpdir(), "guard-"));
+mkdirSync(join(root, "secrets"));
+mkdirSync(join(root, "src"));
+writeFileSync(join(root, "secrets", "api-key.txt"), "FAKE");
+writeFileSync(join(root, ".env.local"), "FAKE=1");
+// "junction": en Windows crear un symlink de directorio exige modo desarrollador; una unión no.
+// En Linux/macOS el tipo se ignora.
+symlinkSync(join(root, "secrets"), join(root, "src", "atajo"), "junction");
+
+describe("isForbiddenPath", () => {
+  it("bloquea secrets/, .env*, data/ y .git/", () => {
+    for (const p of [
+      "secrets/api-key.txt",
+      "./secrets",
+      ".env",
+      ".env.local",
+      "src/.env.production",
+      "data/library.db",
+      ".git/config",
+    ]) {
+      expect(isForbiddenPath(p, root), p).toBe(true);
+    }
+  });
+  it("bloquea rutas absolutas y con ../", () => {
+    expect(isForbiddenPath(join(root, "secrets/x"), root)).toBe(true);
+    expect(isForbiddenPath("src/../secrets/x", root)).toBe(true);
+  });
+  it("bloquea un enlace simbólico que apunta a una zona prohibida", () => {
+    expect(isForbiddenPath("src/atajo/api-key.txt", root)).toBe(true);
+  });
+  it("permite código, docs y .env.example", () => {
+    for (const p of [
+      "src/app/page.tsx",
+      "docs/features.md",
+      ".env.example",
+      "node_modules/next/dist/docs/index.md",
+      "secrets/README.md".replace("secrets", "docs"),
+    ]) {
+      expect(isForbiddenPath(p, root), p).toBe(false);
+    }
+  });
+});
+
+describe("checkToolCall", () => {
+  it("bloquea read/edit/write sobre zonas prohibidas (OpenCode y Claude Code)", () => {
+    expect(checkToolCall("read", { filePath: "secrets/api-key.txt" }, root)).toMatch(/Bloqueado/);
+    expect(checkToolCall("Read", { file_path: join(root, ".env.local") }, root)).toMatch(/Bloqueado/);
+    expect(checkToolCall("edit", { filePath: ".env" }, root)).toMatch(/Bloqueado/);
+  });
+  it("bloquea glob/grep dirigidos a zonas prohibidas", () => {
+    expect(checkToolCall("glob", { pattern: "secrets/**" }, root)).toMatch(/Bloqueado/);
+    expect(checkToolCall("grep", { pattern: "KEY", path: "secrets" }, root)).toMatch(/Bloqueado/);
+    expect(checkToolCall("glob", { pattern: "**/.env*" }, root)).toMatch(/Bloqueado/);
+  });
+  it("bloquea comandos bash que mencionan rutas prohibidas", () => {
+    for (const cmd of [
+      "cat secrets/api-key.txt",
+      "cat ./.env.local",
+      "type 'secrets/x' | head",
+      "cp data/library.db /tmp",
+      "echo hi && cat $PWD/.env",
+    ]) {
+      expect(checkToolCall("bash", { command: cmd }, root), cmd).toMatch(/Bloqueado/);
+    }
+  });
+  it("bloquea la herramienta de comandos de OpenCode 2.x, que se llama `shell` y no `bash`", () => {
+    for (const cmd of ["cat secrets/api-key.txt", "cat .env", "grep -n KEY ./.env.local", "cp data/library.db /tmp"]) {
+      expect(checkToolCall("shell", { command: cmd }, root), cmd).toMatch(/Bloqueado/);
+    }
+    expect(checkToolCall("shell", { command: "npm test && cat .env.example" }, root)).toBeNull();
+  });
+  it("bloquea un comando aunque la herramienta tenga otro nombre (se detecta por el argumento `command`)", () => {
+    expect(checkToolCall("terminal", { command: "cat secrets/api-key.txt" }, root)).toMatch(/Bloqueado/);
+    expect(checkToolCall("exec", { command: "ls src" }, root)).toBeNull();
+  });
+  it("revisa cualquier campo con nombre de ruta, no solo los conocidos, y también listas de rutas", () => {
+    expect(checkToolCall("write", { path: ".env", content: "X=1" }, root)).toMatch(/Bloqueado/);
+    expect(checkToolCall("list", { directory: "secrets" }, root)).toMatch(/Bloqueado/);
+    expect(checkToolCall("read", { paths: ["src/app/page.tsx", ".env.local"] }, root)).toMatch(/Bloqueado/);
+    expect(checkToolCall("write", { path: "src/app/page.tsx", content: "contiene la palabra .env" }, root)).toBeNull();
+  });
+  it("permite leer .env.example (plantilla sin secretos) pero no comodines que abarquen .env reales", () => {
+    expect(checkToolCall("read", { filePath: ".env.example" }, root)).toBeNull();
+    expect(checkToolCall("Read", { file_path: join(root, ".env.example") }, root)).toBeNull();
+    expect(checkToolCall("glob", { pattern: ".env.*" }, root)).toMatch(/Bloqueado/);
+  });
+  it("deja pasar el trabajo normal", () => {
+    expect(checkToolCall("read", { filePath: "src/app/page.tsx" }, root)).toBeNull();
+    expect(checkToolCall("bash", { command: "npm test && cat .env.example" }, root)).toBeNull();
+    expect(checkToolCall("grep", { pattern: "LoanService", path: "src" }, root)).toBeNull();
+    expect(checkToolCall("glob", { pattern: "src/**/*.ts" }, root)).toBeNull();
+  });
+  it("LIMITACIÓN conocida: un comodín en bash esquiva la barrera (por eso hay defensa en profundidad)", () => {
+    expect(checkToolCall("bash", { command: "cat sec*/api-key.txt" }, root)).toBeNull();
+  });
+});

@@ -24,10 +24,20 @@ export type ServerEnv = z.infer<typeof ServerEnv>;
 
 let cached: ServerEnv | null = null;
 
-/** Variables de entorno del servidor, validadas la primera vez que se piden (no al importar). */
+/**
+ * Variables de entorno del servidor, validadas la primera vez que se piden (no al importar).
+ * Si faltan, lanza un `Error` normal (→ 500 genérico), NUNCA un `ZodError`: ese se traduciría
+ * en un 400 que le mostraría al cliente los nombres de la configuración del servidor.
+ */
 export function serverEnv(): ServerEnv {
   if (cached === null) {
-    cached = ServerEnv.parse(process.env);
+    const result = ServerEnv.safeParse(process.env);
+    if (!result.success) {
+      const missing = result.error.issues.map((issue) => issue.path.join(".")).join(", ");
+      console.error(`[env] Configuración del servidor incompleta: ${missing}`);
+      throw new Error("Configuración del servidor incompleta");
+    }
+    cached = result.data;
   }
   return cached;
 }

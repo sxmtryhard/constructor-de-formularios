@@ -92,7 +92,7 @@ const eslintConfig = defineConfig([
       parserOptions: {
         // Los hooks de los harness viven en carpetas ocultas que tsconfig no incluye.
         projectService: {
-          allowDefaultProject: [".claude/hooks/guard.ts", ".opencode/plugins/guard.ts"],
+          allowDefaultProject: [".claude/hooks/guard.ts", ".opencode/plugins/guard.ts", ".codex/hooks/guard.ts"],
         },
         tsconfigRootDir: import.meta.dirname,
       },

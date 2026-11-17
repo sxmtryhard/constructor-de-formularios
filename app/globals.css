@@ -87,6 +87,88 @@
     transform: translateY(0);
     outline-color: var(--color-primary);
   }
+
+  /* Botones y campos comunes: objetivo táctil de 44 px (2.75rem) y bordes de control con contraste ≥ 3:1. */
+  .btn-primary,
+  .btn-secondary,
+  .btn-danger {
+    display: inline-flex;
+    min-height: 2.75rem;
+    min-width: 2.75rem;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    border-radius: 0.5rem;
+    padding: 0.5rem 1rem;
+    font-weight: 600;
+    text-decoration: none;
+    cursor: pointer;
+  }
+
+  .btn-primary {
+    background-color: var(--color-primary);
+    color: var(--color-surface);
+    border: 2px solid var(--color-primary);
+  }
+
+  .btn-primary:hover {
+    background-color: var(--color-primary-hover);
+    color: var(--color-surface);
+  }
+
+  .btn-secondary {
+    background-color: var(--color-surface);
+    color: var(--color-primary);
+    border: 2px solid var(--color-control-border);
+  }
+
+  .btn-secondary:hover {
+    background-color: var(--color-surface-alt);
+    color: var(--color-primary-hover);
+  }
+
+  .btn-danger {
+    background-color: var(--color-surface);
+    color: var(--color-danger);
+    border: 2px solid var(--color-danger);
+  }
+
+  .btn-primary:disabled,
+  .btn-secondary:disabled,
+  .btn-danger:disabled {
+    cursor: not-allowed;
+    opacity: 0.7;
+  }
+
+  .field-input {
+    display: block;
+    width: 100%;
+    min-height: 2.75rem;
+    border: 2px solid var(--color-control-border);
+    border-radius: 0.5rem;
+    background-color: var(--color-surface);
+    color: var(--color-ink);
+    padding: 0.5rem 0.75rem;
+  }
+
+  .field-input[aria-invalid="true"] {
+    border-color: var(--color-danger);
+  }
+
+  .field-check {
+    width: 1.5rem;
+    height: 1.5rem;
+    accent-color: var(--color-primary);
+  }
+
+  .link {
+    color: var(--color-primary);
+    text-decoration: underline;
+  }
+
+  dialog::backdrop {
+    background-color: color-mix(in srgb, var(--color-primary-deep) 60%, transparent);
+  }
 }
 
 /* F29 · El lector no se imprime: sale solo el aviso (el texto del libro nunca va a papel). */

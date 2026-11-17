@@ -20,7 +20,7 @@ Se conserva el método, la arquitectura por features y las puertas de calidad de
 | 6 | Convención de CSS | «módulos CSS o BEM» (§14.4) | Tailwind con tokens de la paleta azul y blanco (`docs/frontend-rules.md`) | ❓ Tailwind con tokens es una convención consistente; confirmar con el docente que la acepta. |
 | 7 | Archivos (Vercel Blob) | No se usan: el CSV se genera en el navegador con `Blob` (§5) | ADR-0003 prevé Vercel Blob | No se instala `@vercel/blob`. |
 | 8 | Configuración de IA | La diseña y prueba el estudiante, en el primer commit, con evidencias en `ia/` (§15) | Trae guard, permisos, agentes y skills ya hechos | La persona **debe revisarla, adaptarla y justificarla** (qué bloquea, por qué y cómo lo comprueba) y agregar sus propias pruebas en `ia/`. Usar la plantilla tal cual no cubre el reto. |
-| 9 | `export const runtime = "nodejs"` | En cada Route Handler (§9) | No lo menciona | Se escribe tal como pide el enunciado; si choca con Cache Components, se resuelve en F0 leyendo `node_modules/next/dist/docs/`. |
+| 9 | `export const runtime = "nodejs"` | En cada Route Handler (§9) | No lo menciona | Resuelto en F0: **no se escribe**. Con `cacheComponents`, la documentación de Next 16 pide quitarlo y Node.js ya es el runtime por defecto (`02-route-segment-config/runtime.md`). Las rutas corren en Node.js igual. |
 | 10 | Nombre del repositorio | `40-constructor-de-formularios` | `library_agents_job` | Se renombra en `package.json`. |
 
 ## Alternativas consideradas

@@ -7,6 +7,8 @@ Lo mantiene el orquestador: se actualiza al cerrar cada feature (spec aprobada �
 - **No probado de punta a punta en el navegador** (falta el archivo de entorno) ni revisado a 360/768/1024 px.
 - **Siguiente:** F15 (`openapi.yaml` y colección Bruno), F16 (despliegue en Vercel y seguridad), F17 (evidencias de calidad). Pendiente del §11: 3 pruebas de componentes con React Testing Library (requiere `jsdom` y RTL con un ADR) y pruebas de 413/429.
 
+- **Revisión de seguridad (2026-11-16):** corregidos el ReDoS (alta: `isSafePattern` ahora prohíbe repetir grupos y limita a 2 cuantificadores sin tope) y la IP del límite de frecuencia (`ipDe`). Quedan, de severidad baja/media: validar `id`/`codigo`/`cursor` de la URL con Zod; que un documento corrupto salga como 500 y no 400; `exigirOrigen` en `DELETE /api/auth/sesion`; borrar la subcolección `respuestas` al borrar un formulario; límite de frecuencia por instancia (documentar o usar el Firewall de Vercel); CSP con `'unsafe-inline'`; actualizar `next` (aviso moderado de `npm audit`).
+
 ## Decisiones tomadas
 - 2026-11-13 · Se parte de la plantilla `library_agents_job` y se adapta al enunciado ([ADR-0008](adr/0008-adaptacion-al-enunciado.md), en estado *Propuesta*).
 - 2026-11-13 · Finales de línea LF en todo el repositorio (`.gitattributes`): con `core.autocrlf=true` en Windows, Biome rechazaba todos los archivos.

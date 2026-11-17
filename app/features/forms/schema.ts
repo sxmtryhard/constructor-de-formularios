@@ -13,9 +13,14 @@ export type FieldType = z.infer<typeof FieldType>;
 const FIELD_ID = /^[a-z][a-z0-9_]{0,39}$/;
 const ISO_DATE = /^\d{4}-\d{2}-\d{2}$/;
 
+/** Máximo de cuantificadores sin tope (`+`, `*`, `{n,}`): con 2, el peor caso sobre 1000 caracteres es ~10⁶ pasos. */
+const MAX_UNBOUNDED_QUANTIFIERS = 2;
+
 /**
- * Límite de complejidad del patrón del creador para evitar ReDoS (§8): longitud máxima,
- * debe compilar, sin cuantificadores anidados (`(a+)+`, `(a*)*`, `(a|b+){2,}`) ni referencias hacia atrás.
+ * Límite de complejidad del patrón del creador para evitar ReDoS (§8). Conservador a propósito:
+ * longitud máxima, debe compilar, sin referencias hacia atrás, **ningún grupo repetido**
+ * (`)` seguido de `+`, `*` o `{`: cubre `(a+)+`, `((a+))+`, `(a|a)*`, `(a|b+){2,}`) y como mucho
+ * 2 cuantificadores sin tope (evita la explosión polinómica de `a*a*a*a*…`). Un grupo opcional `(…)?` sí se permite.
  */
 export function isSafePattern(pattern: string): boolean {
   if (pattern.length > MAX_PATTERN_CHARS) {
@@ -29,8 +34,11 @@ export function isSafePattern(pattern: string): boolean {
   if (/\\[1-9]/.test(pattern)) {
     return false;
   }
-  const nestedQuantifier = /\([^)]*[+*}][^)]*\)\s*[+*{]/;
-  return !nestedQuantifier.test(pattern);
+  if (/\)\s*[+*{]/.test(pattern)) {
+    return false;
+  }
+  const unbounded = pattern.match(/(?<!\\)[+*]|\{\d+,\}/g) ?? [];
+  return unbounded.length <= MAX_UNBOUNDED_QUANTIFIERS;
 }
 
 /** RF-02: reglas por campo. `min`/`max` = longitud (texto/párrafo), valor (número) u opciones marcadas (casillas). */

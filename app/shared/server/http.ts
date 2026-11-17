@@ -122,13 +122,24 @@ export function exigirOrigen(request: Request): void {
   }
 }
 
-/** IP del cliente (primera de `x-forwarded-for`), para el límite de frecuencia. */
+/**
+ * IP del cliente para el límite de frecuencia. Se prefieren las cabeceras que fija la plataforma
+ * (Vercel: `x-vercel-forwarded-for`, `x-real-ip`); de `x-forwarded-for` se toma el ÚLTIMO salto,
+ * el que agregó el proxy de confianza, porque el primero lo puede inventar el cliente.
+ */
 export function ipDe(request: Request): string {
+  for (const header of ["x-vercel-forwarded-for", "x-real-ip"]) {
+    const value = request.headers.get(header);
+    if (value !== null && value.trim().length > 0) {
+      return value.split(",")[0].trim();
+    }
+  }
   const forwarded = request.headers.get("x-forwarded-for");
   if (forwarded !== null && forwarded.trim().length > 0) {
-    return forwarded.split(",")[0].trim();
+    const hops = forwarded.split(",");
+    return hops[hops.length - 1].trim();
   }
-  return request.headers.get("x-real-ip") ?? "desconocida";
+  return "desconocida";
 }
 
 /** Parámetros de búsqueda como objeto plano, para validarlos con Zod. */

@@ -107,6 +107,31 @@ describe("límite de complejidad del patrón (ReDoS, §8)", () => {
     expect(isSafePattern(pattern)).toBe(false);
   });
 
+  it.each([
+    "((a+))+",
+    "(a|a)*",
+    "(a|aa)+",
+    "(?:a+)+",
+    "a*a*a*a*b",
+    "(x+x+)+y",
+  ])("rechaza el patrón de ReDoS encontrado en la revisión de seguridad %s", (pattern) => {
+    expect(isSafePattern(pattern)).toBe(false);
+  });
+
+  it("acepta un grupo opcional y patrones habituales (correo, teléfono)", () => {
+    for (const pattern of ["(\\+57)?\\d{10}", "[^@\\s]+@[^@\\s]+", "[A-Z]{3}-\\d{3}"]) {
+      expect(isSafePattern(pattern), pattern).toBe(true);
+    }
+  });
+
+  it("un patrón aceptado con el peor caso de 1000 caracteres responde en menos de 200 ms", () => {
+    const regex = new RegExp("^(?:[a-z]+[a-z]*)$");
+    expect(isSafePattern("[a-z]+[a-z]*")).toBe(true);
+    const start = performance.now();
+    regex.test(`${"a".repeat(999)}!`);
+    expect(performance.now() - start).toBeLessThan(200);
+  });
+
   it("rechaza un patrón que no compila", () => {
     expect(isSafePattern("(")).toBe(false);
   });

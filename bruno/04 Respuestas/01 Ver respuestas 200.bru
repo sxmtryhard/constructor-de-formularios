@@ -1,0 +1,20 @@
+meta {
+  name: Ver respuestas (200)
+  type: http
+  seq: 1
+}
+
+get {
+  url: {{baseUrl}}/api/formularios/{{formId}}/respuestas
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{idToken}}
+}
+
+assert {
+  res.status: eq 200
+  res.body.items: isArray
+}

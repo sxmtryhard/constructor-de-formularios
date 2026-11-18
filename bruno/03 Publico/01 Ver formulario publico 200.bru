@@ -1,0 +1,16 @@
+meta {
+  name: Ver formulario publico (200)
+  type: http
+  seq: 1
+}
+
+get {
+  url: {{baseUrl}}/api/f/{{codigo}}
+  body: none
+  auth: none
+}
+
+assert {
+  res.status: eq 200
+  res.body.campos: isArray
+}

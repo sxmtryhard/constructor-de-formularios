@@ -1,0 +1,597 @@
+openapi: 3.1.0
+info:
+  title: Constructor de formularios dinámicos — API
+  version: 1.0.0
+  description: |
+    API REST del trabajo final (enunciado §9). Next.js App Router (Route Handlers en `app/api/**`),
+    Firebase Auth y Firestore vía Admin SDK. Los esquemas salen de los contratos Zod
+    (`app/shared/schema.ts`, `app/features/*/schema.ts`); los cuerpos JSON van en `snake_case`.
+
+    **Autenticación:** cookie de sesión `sesion` (HttpOnly, Secure en producción, SameSite=Lax, 5 días)
+    que se obtiene con `POST /api/auth/sesion`, o cabecera `Authorization: Bearer <idToken>`.
+
+    **Origen:** en los métodos que modifican datos la cabecera `Origin` debe coincidir con el host; si no, `403`.
+
+    **Errores:** todos con el cuerpo `ErrorBody` (`{ error, detalles? }`).
+servers:
+  - url: https://constructor-de-formularios.vercel.app
+    description: Producción (Vercel)
+  - url: http://localhost:3000
+    description: Desarrollo local
+tags:
+  - name: Sesión
+  - name: Formularios
+    description: Rutas privadas del creador (solo ve y toca lo suyo).
+  - name: Respuestas
+  - name: Público
+    description: Rutas sin sesión para quien responde.
+
+paths:
+  /api/auth/sesion:
+    post:
+      tags: [Sesión]
+      summary: Crear la cookie de sesión a partir del ID token de Firebase Auth
+      description: Exige un inicio de sesión reciente (≤ 5 minutos).
+      security: []
+      parameters:
+        - $ref: "#/components/parameters/Origin"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/CreateSessionInput" }
+      responses:
+        "204":
+          description: Sesión creada.
+          headers:
+            Set-Cookie:
+              description: "`sesion=<cookie>; HttpOnly; Secure; SameSite=Lax; Path=/; Max-Age=432000`"
+              schema: { type: string }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "413": { $ref: "#/components/responses/PayloadTooLarge" }
+        "415": { $ref: "#/components/responses/UnsupportedMediaType" }
+    delete:
+      tags: [Sesión]
+      summary: Cerrar sesión
+      description: Revoca los refresh tokens si la cookie era válida y la borra.
+      security: []
+      responses:
+        "204": { description: Sesión cerrada. }
+
+  /api/auth/yo:
+    get:
+      tags: [Sesión]
+      summary: Usuario de la sesión actual
+      responses:
+        "200":
+          description: Usuario autenticado.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/MeResponse" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+
+  /api/formularios:
+    get:
+      tags: [Formularios]
+      summary: Listar mis formularios (más recientes primero)
+      parameters:
+        - $ref: "#/components/parameters/Limite"
+        - $ref: "#/components/parameters/Cursor"
+      responses:
+        "200":
+          description: Página de formularios.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/FormList" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+    post:
+      tags: [Formularios]
+      summary: Crear un formulario
+      parameters:
+        - $ref: "#/components/parameters/Origin"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/FormInput" }
+      responses:
+        "201":
+          description: Formulario creado (versión 1, sin publicar).
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Form" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "413": { $ref: "#/components/responses/PayloadTooLarge" }
+        "415": { $ref: "#/components/responses/UnsupportedMediaType" }
+        "429": { $ref: "#/components/responses/TooManyRequests" }
+
+  /api/formularios/{id}:
+    parameters:
+      - $ref: "#/components/parameters/FormId"
+    get:
+      tags: [Formularios]
+      summary: Ver un formulario propio
+      responses:
+        "200":
+          description: Formulario.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Form" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "404": { $ref: "#/components/responses/NotFound" }
+    put:
+      tags: [Formularios]
+      summary: Editar un formulario propio
+      description: Si los campos cambian y ya hay respuestas, se guarda una nueva versión del esquema y las respuestas antiguas conservan la suya.
+      parameters:
+        - $ref: "#/components/parameters/Origin"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/FormInput" }
+      responses:
+        "200":
+          description: Formulario actualizado.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Form" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "413": { $ref: "#/components/responses/PayloadTooLarge" }
+        "415": { $ref: "#/components/responses/UnsupportedMediaType" }
+        "429": { $ref: "#/components/responses/TooManyRequests" }
+    delete:
+      tags: [Formularios]
+      summary: Borrar un formulario propio
+      parameters:
+        - $ref: "#/components/parameters/Origin"
+      responses:
+        "204": { description: Borrado. }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "429": { $ref: "#/components/responses/TooManyRequests" }
+
+  /api/formularios/{id}/publicar:
+    parameters:
+      - $ref: "#/components/parameters/FormId"
+    post:
+      tags: [Formularios]
+      summary: Publicar con enlace y fecha de cierre opcional (RF-04)
+      parameters:
+        - $ref: "#/components/parameters/Origin"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/PublishInput" }
+      responses:
+        "200":
+          description: Publicado; `codigo` es el del enlace `/f/{codigo}`.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Form" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "429": { $ref: "#/components/responses/TooManyRequests" }
+
+  /api/formularios/{id}/despublicar:
+    parameters:
+      - $ref: "#/components/parameters/FormId"
+    post:
+      tags: [Formularios]
+      summary: Retirar la publicación
+      parameters:
+        - $ref: "#/components/parameters/Origin"
+      responses:
+        "200":
+          description: Despublicado.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Form" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "429": { $ref: "#/components/responses/TooManyRequests" }
+
+  /api/formularios/{id}/respuestas:
+    parameters:
+      - $ref: "#/components/parameters/FormId"
+    get:
+      tags: [Respuestas]
+      summary: Respuestas de un formulario propio (RF-05), con la definición de cada versión
+      parameters:
+        - $ref: "#/components/parameters/Limite"
+        - $ref: "#/components/parameters/Cursor"
+      responses:
+        "200":
+          description: Página de respuestas.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ResponseList" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "404": { $ref: "#/components/responses/NotFound" }
+
+  /api/formularios/{id}/resumen:
+    parameters:
+      - $ref: "#/components/parameters/FormId"
+    get:
+      tags: [Respuestas]
+      summary: Resumen por pregunta de la versión vigente (RF-05)
+      responses:
+        "200":
+          description: Resumen.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/FormSummary" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "404": { $ref: "#/components/responses/NotFound" }
+
+  /api/f/{codigo}:
+    parameters:
+      - $ref: "#/components/parameters/Codigo"
+    get:
+      tags: [Público]
+      summary: Definición pública de un formulario publicado
+      security: []
+      responses:
+        "200":
+          description: "Formulario público. `Cache-Control: public, s-maxage=30`."
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/PublicForm" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "410": { $ref: "#/components/responses/Gone" }
+
+  /api/f/{codigo}/respuestas:
+    parameters:
+      - $ref: "#/components/parameters/Codigo"
+    post:
+      tags: [Público]
+      summary: Enviar una respuesta
+      description: |
+        El servidor valida `valores` contra la definición guardada (no contra lo que diga el cliente):
+        un campo no definido → 400; un obligatorio visible vacío → 400. Límite: 20 envíos por minuto por IP.
+      security: []
+      parameters:
+        - $ref: "#/components/parameters/Origin"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/SubmitInput" }
+      responses:
+        "201":
+          description: Respuesta guardada con la versión vigente.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/SubmitResult" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "410": { $ref: "#/components/responses/Gone" }
+        "413": { $ref: "#/components/responses/PayloadTooLarge" }
+        "415": { $ref: "#/components/responses/UnsupportedMediaType" }
+        "429": { $ref: "#/components/responses/TooManyRequests" }
+
+security:
+  - cookieSesion: []
+  - bearerIdToken: []
+
+components:
+  securitySchemes:
+    cookieSesion:
+      type: apiKey
+      in: cookie
+      name: sesion
+    bearerIdToken:
+      type: http
+      scheme: bearer
+      description: ID token de Firebase Auth.
+
+  parameters:
+    Origin:
+      name: Origin
+      in: header
+      required: true
+      description: Debe coincidir con el host de la petición (si no, 403).
+      schema: { type: string, example: "https://constructor-de-formularios.vercel.app" }
+    FormId:
+      name: id
+      in: path
+      required: true
+      schema: { type: string }
+    Codigo:
+      name: codigo
+      in: path
+      required: true
+      description: Código público del enlace (10 caracteres).
+      schema: { type: string, example: "a1b2c3d4e5" }
+    Limite:
+      name: limite
+      in: query
+      schema: { type: integer, minimum: 1, maximum: 100, default: 20 }
+    Cursor:
+      name: cursor
+      in: query
+      description: Valor de `siguiente_cursor` de la página anterior.
+      schema: { type: string, minLength: 1 }
+
+  responses:
+    BadRequest:
+      description: Datos no válidos (con `detalles` por campo).
+      content:
+        application/json:
+          schema: { $ref: "#/components/schemas/ErrorBody" }
+          example: { error: "Datos no válidos", detalles: [{ campo: "nombre", mensaje: "Este campo es obligatorio" }] }
+    Unauthorized:
+      description: Sin sesión o sesión no válida.
+      content:
+        application/json:
+          schema: { $ref: "#/components/schemas/ErrorBody" }
+          example: { error: "No autenticado" }
+    Forbidden:
+      description: Origen no permitido.
+      content:
+        application/json:
+          schema: { $ref: "#/components/schemas/ErrorBody" }
+          example: { error: "Origen no permitido" }
+    NotFound:
+      description: No existe o no es tuyo (no se distingue, para no filtrar existencia).
+      content:
+        application/json:
+          schema: { $ref: "#/components/schemas/ErrorBody" }
+          example: { error: "Formulario no encontrado" }
+    Gone:
+      description: El formulario ya cerró.
+      content:
+        application/json:
+          schema: { $ref: "#/components/schemas/ErrorBody" }
+    PayloadTooLarge:
+      description: Cuerpo mayor de 64 KB.
+      content:
+        application/json:
+          schema: { $ref: "#/components/schemas/ErrorBody" }
+    UnsupportedMediaType:
+      description: El cuerpo no es `application/json`.
+      content:
+        application/json:
+          schema: { $ref: "#/components/schemas/ErrorBody" }
+    TooManyRequests:
+      description: Límite de frecuencia superado.
+      headers:
+        Retry-After:
+          description: Segundos hasta poder reintentar.
+          schema: { type: integer }
+      content:
+        application/json:
+          schema: { $ref: "#/components/schemas/ErrorBody" }
+
+  schemas:
+    ErrorDetail:
+      type: object
+      additionalProperties: false
+      required: [campo, mensaje]
+      properties:
+        campo: { type: string }
+        mensaje: { type: string }
+    ErrorBody:
+      type: object
+      additionalProperties: false
+      required: [error]
+      properties:
+        error: { type: string }
+        detalles:
+          type: array
+          items: { $ref: "#/components/schemas/ErrorDetail" }
+
+    Role:
+      type: string
+      enum: [CREADOR, ADMINISTRADOR]
+    SessionUser:
+      type: object
+      additionalProperties: false
+      required: [uid, correo, rol]
+      properties:
+        uid: { type: string }
+        correo: { type: string }
+        rol: { $ref: "#/components/schemas/Role" }
+    MeResponse:
+      type: object
+      additionalProperties: false
+      required: [usuario]
+      properties:
+        usuario: { $ref: "#/components/schemas/SessionUser" }
+    CreateSessionInput:
+      type: object
+      additionalProperties: false
+      required: [id_token]
+      properties:
+        id_token: { type: string, minLength: 1, maxLength: 4096 }
+
+    FieldType:
+      type: string
+      enum: [texto, parrafo, numero, seleccion, casillas, fecha]
+    FieldRules:
+      type: object
+      additionalProperties: false
+      required: [min, max, patron]
+      description: "`min`/`max` = longitud (texto, párrafo), valor (número) u opciones marcadas (casillas)."
+      properties:
+        min: { type: [integer, "null"], minimum: 0, maximum: 1000000 }
+        max: { type: [integer, "null"], minimum: 0, maximum: 1000000 }
+        patron:
+          type: [string, "null"]
+          maxLength: 100
+          description: Expresión regular con límite de complejidad (sin grupos repetidos, sin referencias hacia atrás, ≤ 2 cuantificadores sin tope).
+    VisibleIf:
+      type: object
+      additionalProperties: false
+      required: [campo_id, valor]
+      properties:
+        campo_id: { type: string, pattern: "^[a-z][a-z0-9_]{0,39}$" }
+        valor: { type: string, maxLength: 200 }
+    Field:
+      type: object
+      additionalProperties: false
+      required: [id, tipo, etiqueta, obligatorio, opciones, reglas, visible_si]
+      properties:
+        id: { type: string, pattern: "^[a-z][a-z0-9_]{0,39}$" }
+        tipo: { $ref: "#/components/schemas/FieldType" }
+        etiqueta: { type: string, minLength: 1, maxLength: 200 }
+        obligatorio: { type: boolean }
+        opciones:
+          type: array
+          maxItems: 50
+          items: { type: string, minLength: 1, maxLength: 200 }
+        reglas: { $ref: "#/components/schemas/FieldRules" }
+        visible_si:
+          oneOf:
+            - $ref: "#/components/schemas/VisibleIf"
+            - type: "null"
+    FormInput:
+      type: object
+      additionalProperties: false
+      required: [titulo, descripcion, campos]
+      description: "Máximo 30 campos, ids únicos, selección/casillas con opciones y `visible_si` apuntando a un campo anterior."
+      properties:
+        titulo: { type: string, minLength: 1, maxLength: 150 }
+        descripcion: { type: string, maxLength: 1000 }
+        campos:
+          type: array
+          maxItems: 30
+          items: { $ref: "#/components/schemas/Field" }
+    PublishInput:
+      type: object
+      additionalProperties: false
+      required: [cierra]
+      properties:
+        cierra: { type: [string, "null"], format: date-time, description: Fecha de cierre ISO 8601 (futura) o null. }
+    Form:
+      type: object
+      additionalProperties: false
+      required: [id, titulo, descripcion, campos, version, publicado, codigo, cierra, total_respuestas, creado_en, actualizado_en]
+      properties:
+        id: { type: string }
+        titulo: { type: string }
+        descripcion: { type: string }
+        campos: { type: array, items: { $ref: "#/components/schemas/Field" } }
+        version: { type: integer, minimum: 1 }
+        publicado: { type: boolean }
+        codigo: { type: [string, "null"] }
+        cierra: { type: [string, "null"], format: date-time }
+        total_respuestas: { type: integer, minimum: 0 }
+        creado_en: { type: string, format: date-time }
+        actualizado_en: { type: string, format: date-time }
+    FormList:
+      type: object
+      additionalProperties: false
+      required: [items, siguiente_cursor]
+      properties:
+        items: { type: array, items: { $ref: "#/components/schemas/Form" } }
+        siguiente_cursor: { type: [string, "null"] }
+    PublicForm:
+      type: object
+      additionalProperties: false
+      required: [codigo, titulo, descripcion, campos, version, cierra]
+      properties:
+        codigo: { type: string }
+        titulo: { type: string }
+        descripcion: { type: string }
+        campos: { type: array, items: { $ref: "#/components/schemas/Field" } }
+        version: { type: integer, minimum: 1 }
+        cierra: { type: [string, "null"], format: date-time }
+
+    AnswerValue:
+      description: "texto/párrafo/fecha/selección = string; número = number; casillas = string[]; vacío = null. Máx. 1000 caracteres."
+      oneOf:
+        - type: string
+        - type: number
+        - type: array
+          items: { type: string }
+        - type: "null"
+    SubmitInput:
+      type: object
+      additionalProperties: false
+      required: [valores]
+      properties:
+        valores:
+          type: object
+          additionalProperties: { $ref: "#/components/schemas/AnswerValue" }
+    SubmitResult:
+      type: object
+      additionalProperties: false
+      required: [id, version]
+      properties:
+        id: { type: string }
+        version: { type: integer, minimum: 1 }
+    ResponseItem:
+      type: object
+      additionalProperties: false
+      required: [id, version, respondido_en, valores]
+      properties:
+        id: { type: string }
+        version: { type: integer, minimum: 1 }
+        respondido_en: { type: string, format: date-time }
+        valores:
+          type: object
+          additionalProperties: { $ref: "#/components/schemas/AnswerValue" }
+    ResponseList:
+      type: object
+      additionalProperties: false
+      required: [items, siguiente_cursor, versiones]
+      properties:
+        items: { type: array, items: { $ref: "#/components/schemas/ResponseItem" } }
+        siguiente_cursor: { type: [string, "null"] }
+        versiones:
+          type: array
+          items:
+            type: object
+            additionalProperties: false
+            required: [version, campos]
+            properties:
+              version: { type: integer, minimum: 1 }
+              campos: { type: array, items: { $ref: "#/components/schemas/Field" } }
+    OptionCount:
+      type: object
+      additionalProperties: false
+      required: [opcion, cantidad]
+      properties:
+        opcion: { type: string }
+        cantidad: { type: integer, minimum: 0 }
+    QuestionSummary:
+      type: object
+      additionalProperties: false
+      required: [campo_id, etiqueta, tipo, respondidas, conteos, promedio, minimo, maximo]
+      properties:
+        campo_id: { type: string }
+        etiqueta: { type: string }
+        tipo: { type: string }
+        respondidas: { type: integer, minimum: 0 }
+        conteos:
+          oneOf:
+            - type: array
+              items: { $ref: "#/components/schemas/OptionCount" }
+            - type: "null"
+        promedio: { type: [number, "null"] }
+        minimo: { type: [number, "null"] }
+        maximo: { type: [number, "null"] }
+    FormSummary:
+      type: object
+      additionalProperties: false
+      required: [total, version, preguntas]
+      properties:
+        total: { type: integer, minimum: 0 }
+        version: { type: integer, minimum: 1 }
+        preguntas: { type: array, items: { $ref: "#/components/schemas/QuestionSummary" } }

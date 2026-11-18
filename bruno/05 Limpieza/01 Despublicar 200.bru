@@ -1,0 +1,24 @@
+meta {
+  name: Despublicar (200)
+  type: http
+  seq: 1
+}
+
+post {
+  url: {{baseUrl}}/api/formularios/{{formId}}/despublicar
+  body: none
+  auth: bearer
+}
+
+headers {
+  Origin: {{origin}}
+}
+
+auth:bearer {
+  token: {{idToken}}
+}
+
+assert {
+  res.status: eq 200
+  res.body.publicado: eq false
+}

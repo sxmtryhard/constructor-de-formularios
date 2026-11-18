@@ -4,6 +4,16 @@ Trabajo final de Desarrollo Web: crea formularios arrastrando campos, publícalo
 
 Parte de la plantilla de agentes [`justojaramillo/library_agents_job`](https://github.com/justojaramillo/library_agents_job), adaptada a este proyecto. Los requisitos están en `docs/enunciado.md`; las diferencias con la plantilla, en `docs/adr/0008-adaptacion-al-enunciado.md`.
 
+**Producción:** <https://constructor-de-formularios.vercel.app>
+
+## Entregables
+| Qué | Dónde |
+| --- | --- |
+| Documentación de la API | [`openapi.yaml`](openapi.yaml) |
+| Colección de solicitudes (Bruno) | [`bruno/`](bruno/): abre la carpeta en Bruno, elige el entorno `produccion` o `local`, escribe tu `email` y `password` (secreto, no se versiona) y ejecuta la colección en orden |
+| Evidencias de calidad (§14) | [`calidad/CALIDAD.md`](calidad/CALIDAD.md) |
+| Configuración de IA y bitácora (§15) | [`ia/`](ia/) |
+
 ## Empieza aquí
 1. Lee `docs/empezar.md` (requisitos, Firebase, archivo de entorno y el primer mensaje).
 2. `npm install` y `npm run check` (debe quedar en verde antes de empezar).
@@ -24,7 +34,9 @@ Parte de la plantilla de agentes [`justojaramillo/library_agents_job`](https://g
 AGENTS.md, CLAUDE.md     Reglas para los agentes (lo primero que leen)
 docs/                    features.md (la lista), empezar.md, progreso.md, architecture.md, frontend-rules.md,
                          adr/ (decisiones), specs/ (las escribes tú, feature a feature), handoffs/ (notas de entrega)
-app/                     Todo el código (hoy solo la página base y los estilos con la paleta)
+app/                     Todo el código: rutas, páginas, API (app/api) y features (auth, forms, responses)
+openapi.yaml, bruno/     Documentación de la API y colección de solicitudes
+calidad/, ia/            Evidencias de calidad y de la configuración de IA
 tests/project/           Pruebas del proyecto: guard, agentes, estilo de contratos y contraste de la paleta
 .claude/ .opencode/ .agents/   Agentes, skills y el guard que bloquea .env, data/ y secrets/
 ```

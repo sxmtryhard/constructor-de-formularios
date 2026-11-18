@@ -1,0 +1,20 @@
+meta {
+  name: Yo con sesion (200)
+  type: http
+  seq: 7
+}
+
+get {
+  url: {{baseUrl}}/api/auth/yo
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{idToken}}
+}
+
+assert {
+  res.status: eq 200
+  res.body.usuario.uid: isString
+}

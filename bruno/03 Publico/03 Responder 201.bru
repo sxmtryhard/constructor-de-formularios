@@ -1,0 +1,31 @@
+meta {
+  name: Responder (201)
+  type: http
+  seq: 3
+}
+
+post {
+  url: {{baseUrl}}/api/f/{{codigo}}/respuestas
+  body: json
+  auth: none
+}
+
+headers {
+  Origin: {{origin}}
+}
+
+body:json {
+  {
+    "valores": {
+      "nombre": "Ana",
+      "edad": 20,
+      "rol": "Estudiante",
+      "curso": "11B"
+    }
+  }
+}
+
+assert {
+  res.status: eq 201
+  res.body.version: eq 1
+}

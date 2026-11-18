@@ -1,0 +1,29 @@
+meta {
+  name: Responder con obligatorio vacio (400)
+  type: http
+  seq: 4
+}
+
+post {
+  url: {{baseUrl}}/api/f/{{codigo}}/respuestas
+  body: json
+  auth: none
+}
+
+headers {
+  Origin: {{origin}}
+}
+
+body:json {
+  {
+    "valores": {
+      "nombre": "",
+      "rol": "Docente"
+    }
+  }
+}
+
+assert {
+  res.status: eq 400
+  res.body.detalles: isArray
+}

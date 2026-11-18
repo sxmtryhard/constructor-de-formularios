@@ -1,0 +1,29 @@
+meta {
+  name: Responder con campo no definido (400)
+  type: http
+  seq: 5
+}
+
+post {
+  url: {{baseUrl}}/api/f/{{codigo}}/respuestas
+  body: json
+  auth: none
+}
+
+headers {
+  Origin: {{origin}}
+}
+
+body:json {
+  {
+    "valores": {
+      "nombre": "Ana",
+      "rol": "Docente",
+      "inventado": "x"
+    }
+  }
+}
+
+assert {
+  res.status: eq 400
+}

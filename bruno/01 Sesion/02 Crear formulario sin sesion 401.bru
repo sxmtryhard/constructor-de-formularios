@@ -1,0 +1,86 @@
+meta {
+  name: Crear formulario sin sesion (401)
+  type: http
+  seq: 2
+}
+
+post {
+  url: {{baseUrl}}/api/formularios
+  body: json
+  auth: none
+}
+
+headers {
+  Origin: {{origin}}
+}
+
+body:json {
+  {
+    "titulo": "Inscripción al club",
+    "descripcion": "Formulario de prueba creado desde Bruno",
+    "campos": [
+      {
+        "id": "nombre",
+        "tipo": "texto",
+        "etiqueta": "Nombre",
+        "obligatorio": true,
+        "opciones": [],
+        "reglas": {
+          "min": 2,
+          "max": 80,
+          "patron": null
+        },
+        "visible_si": null
+      },
+      {
+        "id": "edad",
+        "tipo": "numero",
+        "etiqueta": "Edad",
+        "obligatorio": false,
+        "opciones": [],
+        "reglas": {
+          "min": 10,
+          "max": 99,
+          "patron": null
+        },
+        "visible_si": null
+      },
+      {
+        "id": "rol",
+        "tipo": "seleccion",
+        "etiqueta": "Rol",
+        "obligatorio": true,
+        "opciones": [
+          "Estudiante",
+          "Docente"
+        ],
+        "reglas": {
+          "min": null,
+          "max": null,
+          "patron": null
+        },
+        "visible_si": null
+      },
+      {
+        "id": "curso",
+        "tipo": "texto",
+        "etiqueta": "Curso",
+        "obligatorio": true,
+        "opciones": [],
+        "reglas": {
+          "min": null,
+          "max": null,
+          "patron": null
+        },
+        "visible_si": {
+          "campo_id": "rol",
+          "valor": "Estudiante"
+        }
+      }
+    ]
+  }
+}
+
+assert {
+  res.status: eq 401
+}

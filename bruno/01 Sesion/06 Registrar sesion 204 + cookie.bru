@@ -1,0 +1,25 @@
+meta {
+  name: Registrar sesion (204 + cookie)
+  type: http
+  seq: 6
+}
+
+post {
+  url: {{baseUrl}}/api/auth/sesion
+  body: json
+  auth: none
+}
+
+headers {
+  Origin: {{origin}}
+}
+
+body:json {
+  {
+    "id_token": "{{idToken}}"
+  }
+}
+
+assert {
+  res.status: eq 204
+}

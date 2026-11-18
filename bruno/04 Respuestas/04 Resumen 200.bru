@@ -1,0 +1,20 @@
+meta {
+  name: Resumen (200)
+  type: http
+  seq: 4
+}
+
+get {
+  url: {{baseUrl}}/api/formularios/{{formId}}/resumen
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{idToken}}
+}
+
+assert {
+  res.status: eq 200
+  res.body.preguntas: isArray
+}

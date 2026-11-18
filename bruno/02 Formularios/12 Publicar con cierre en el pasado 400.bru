@@ -1,0 +1,29 @@
+meta {
+  name: Publicar con cierre en el pasado (400)
+  type: http
+  seq: 12
+}
+
+post {
+  url: {{baseUrl}}/api/formularios/{{formId}}/publicar
+  body: json
+  auth: bearer
+}
+
+headers {
+  Origin: {{origin}}
+}
+
+auth:bearer {
+  token: {{idToken}}
+}
+
+body:json {
+  {
+    "cierra": "2020-01-01T00:00:00Z"
+  }
+}
+
+assert {
+  res.status: eq 400
+}

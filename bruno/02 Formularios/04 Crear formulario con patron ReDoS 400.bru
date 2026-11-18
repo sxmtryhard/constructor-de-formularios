@@ -1,0 +1,45 @@
+meta {
+  name: Crear formulario con patron ReDoS (400)
+  type: http
+  seq: 4
+}
+
+post {
+  url: {{baseUrl}}/api/formularios
+  body: json
+  auth: bearer
+}
+
+headers {
+  Origin: {{origin}}
+}
+
+auth:bearer {
+  token: {{idToken}}
+}
+
+body:json {
+  {
+    "titulo": "Inscripción al club",
+    "descripcion": "Formulario de prueba creado desde Bruno",
+    "campos": [
+      {
+        "id": "nombre",
+        "tipo": "texto",
+        "etiqueta": "Nombre",
+        "obligatorio": true,
+        "opciones": [],
+        "reglas": {
+          "min": null,
+          "max": null,
+          "patron": "(a+)+"
+        },
+        "visible_si": null
+      }
+    ]
+  }
+}
+
+assert {
+  res.status: eq 400
+}

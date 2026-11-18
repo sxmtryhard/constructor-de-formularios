@@ -1,0 +1,23 @@
+meta {
+  name: Borrar formulario ya borrado (404)
+  type: http
+  seq: 3
+}
+
+delete {
+  url: {{baseUrl}}/api/formularios/{{formId}}
+  body: none
+  auth: bearer
+}
+
+headers {
+  Origin: {{origin}}
+}
+
+auth:bearer {
+  token: {{idToken}}
+}
+
+assert {
+  res.status: eq 404
+}

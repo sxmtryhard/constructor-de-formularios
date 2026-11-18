@@ -1,0 +1,21 @@
+meta {
+  name: Crear cookie sin Origin (403)
+  type: http
+  seq: 4
+}
+
+post {
+  url: {{baseUrl}}/api/auth/sesion
+  body: json
+  auth: none
+}
+
+body:json {
+  {
+    "id_token": "{{idToken}}"
+  }
+}
+
+assert {
+  res.status: eq 403
+}

@@ -1,0 +1,19 @@
+meta {
+  name: Ver formulario inexistente o ajeno (404)
+  type: http
+  seq: 9
+}
+
+get {
+  url: {{baseUrl}}/api/formularios/no-existe-123
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{idToken}}
+}
+
+assert {
+  res.status: eq 404
+}

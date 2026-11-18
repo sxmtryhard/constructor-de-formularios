@@ -1,0 +1,25 @@
+meta {
+  name: Responder a codigo inexistente (404)
+  type: http
+  seq: 7
+}
+
+post {
+  url: {{baseUrl}}/api/f/zzzzzzzzzz/respuestas
+  body: json
+  auth: none
+}
+
+headers {
+  Origin: {{origin}}
+}
+
+body:json {
+  {
+    "valores": {}
+  }
+}
+
+assert {
+  res.status: eq 404
+}

@@ -1,0 +1,19 @@
+meta {
+  name: Ver respuestas sin sesion (401)
+  type: http
+  seq: 3
+}
+
+get {
+  url: {{baseUrl}}/api/formularios/{{formId}}/respuestas
+  body: none
+  auth: none
+}
+
+assert {
+  res.status: eq 401
+}
+
+docs {
+  Si Bruno guardó la cookie `sesion`, bórrela del almacén de cookies para ver el 401.
+}

@@ -1,0 +1,19 @@
+meta {
+  name: Resumen de formulario ajeno (404)
+  type: http
+  seq: 5
+}
+
+get {
+  url: {{baseUrl}}/api/formularios/no-existe-123/resumen
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{idToken}}
+}
+
+assert {
+  res.status: eq 404
+}

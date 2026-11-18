@@ -1,0 +1,24 @@
+meta {
+  name: Responder sin Origin (403)
+  type: http
+  seq: 6
+}
+
+post {
+  url: {{baseUrl}}/api/f/{{codigo}}/respuestas
+  body: json
+  auth: none
+}
+
+body:json {
+  {
+    "valores": {
+      "nombre": "Ana",
+      "rol": "Docente"
+    }
+  }
+}
+
+assert {
+  res.status: eq 403
+}

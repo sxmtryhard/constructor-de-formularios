@@ -1,0 +1,32 @@
+meta {
+  name: Iniciar sesion en Firebase (obtener idToken)
+  type: http
+  seq: 3
+}
+
+post {
+  url: https://identitytoolkit.googleapis.com/v1/accounts:signInWithPassword?key={{firebaseApiKey}}
+  body: json
+  auth: none
+}
+
+body:json {
+  {
+    "email": "{{email}}",
+    "password": "{{password}}",
+    "returnSecureToken": true
+  }
+}
+
+assert {
+  res.status: eq 200
+  res.body.idToken: isString
+}
+
+script:post-response {
+  bru.setVar("idToken", res.body.idToken);
+}
+
+docs {
+  Firebase Auth (REST). El correo y la contraseña van en el entorno como secretos (no se versionan).
+}

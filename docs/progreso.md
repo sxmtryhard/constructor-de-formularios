@@ -4,8 +4,12 @@ Lo mantiene el orquestador: se actualiza al cerrar cada feature (spec aprobada �
 
 ## Estado
 - **Construido (2026-11-16):** MVP F0–F14 según `docs/specs/F0-F14-mvp.md` (aprobada sin ronda de preguntas a pedido de la persona; las decisiones marcadas «(IA)» están por revisar). API completa, constructor, formulario público, respuestas, resumen y CSV. `npm run check:full` en verde (190 pruebas). Notas en `docs/handoffs/`.
-- **No probado de punta a punta en el navegador** (falta el archivo de entorno) ni revisado a 360/768/1024 px.
-- **Siguiente:** F15 (`openapi.yaml` y colección Bruno), F16 (despliegue en Vercel y seguridad), F17 (evidencias de calidad). Pendiente del §11: 3 pruebas de componentes con React Testing Library (requiere `jsdom` y RTL con un ADR) y pruebas de 413/429.
+- **Desplegado (2026-11-17):** <https://constructor-de-formularios.vercel.app> con las 7 variables de Firebase en Vercel. Verificado: `/api/auth/yo` → 401 y `/api/f/zzzzzzzzzz` → 404. **Falta que la persona pruebe el flujo con sesión** (crear cuenta, crear, publicar, responder, ver respuestas y CSV) y **rotar la clave privada**, que quedó expuesta en el chat.
+- **F15 hecho (2026-11-17):** `openapi.yaml` (10 rutas, todos los códigos de error) y la colección `bruno/` (36 peticiones: sesión, éxito, 400, 401, 403 y 404 por ruta principal). La colección no se ha ejecutado aún contra producción: necesita el correo y la contraseña de la persona.
+- **Pruebas 413/415/429 (2026-11-17):** `app/features/responses/tests/limits-routes.test.ts` (13 casos).
+- **F17 parcial (2026-11-17):** `calidad/CALIDAD.md` con capturas a 360, 768 y 1024 px de las páginas públicas, cabeceras y TTFB. Faltan Lighthouse, axe, el validador W3C, la revisión manual, las páginas con sesión y elegir los 3 retos.
+- **Pendiente del §11:** 3 pruebas de componentes con React Testing Library. Hay que instalar `jsdom`, `@vitejs/plugin-react` y `@testing-library/{react,user-event,jest-dom,dom}` (listados en el §13 del enunciado); falta la autorización de la persona y escribir un ADR.
+- **§15:** `ia/README.md` (dónde está cada restricción) e `ia/bitacora.md` (entradas en borrador que debe revisar la persona).
 
 - **Revisión de seguridad (2026-11-16):** corregidos el ReDoS (alta: `isSafePattern` ahora prohíbe repetir grupos y limita a 2 cuantificadores sin tope) y la IP del límite de frecuencia (`ipDe`). Quedan, de severidad baja/media: validar `id`/`codigo`/`cursor` de la URL con Zod; que un documento corrupto salga como 500 y no 400; `exigirOrigen` en `DELETE /api/auth/sesion`; borrar la subcolección `respuestas` al borrar un formulario; límite de frecuencia por instancia (documentar o usar el Firewall de Vercel); CSP con `'unsafe-inline'`; actualizar `next` (aviso moderado de `npm audit`).
 

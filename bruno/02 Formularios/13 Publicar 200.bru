@@ -1,0 +1,34 @@
+meta {
+  name: Publicar (200)
+  type: http
+  seq: 13
+}
+
+post {
+  url: {{baseUrl}}/api/formularios/{{formId}}/publicar
+  body: json
+  auth: bearer
+}
+
+headers {
+  Origin: {{origin}}
+}
+
+auth:bearer {
+  token: {{idToken}}
+}
+
+body:json {
+  {
+    "cierra": null
+  }
+}
+
+assert {
+  res.status: eq 200
+  res.body.publicado: eq true
+}
+
+script:post-response {
+  bru.setVar("codigo", res.body.codigo);
+}

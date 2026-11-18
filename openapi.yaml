@@ -57,8 +57,11 @@ paths:
       summary: Cerrar sesión
       description: Revoca los refresh tokens si la cookie era válida y la borra.
       security: []
+      parameters:
+        - $ref: "#/components/parameters/Origin"
       responses:
         "204": { description: Sesión cerrada. }
+        "403": { $ref: "#/components/responses/Forbidden" }
 
   /api/auth/yo:
     get:
@@ -311,13 +314,14 @@ components:
       name: id
       in: path
       required: true
-      schema: { type: string }
+      description: Un id con otra forma responde 404, igual que uno inexistente.
+      schema: { type: string, pattern: "^[A-Za-z0-9-]{1,64}$" }
     Codigo:
       name: codigo
       in: path
       required: true
-      description: Código público del enlace (10 caracteres).
-      schema: { type: string, example: "a1b2c3d4e5" }
+      description: Código público del enlace (10 caracteres). Un código con otra forma responde 404.
+      schema: { type: string, pattern: "^[a-z0-9]{1,20}$", example: "a1b2c3d4e5" }
     Limite:
       name: limite
       in: query
@@ -326,7 +330,7 @@ components:
       name: cursor
       in: query
       description: Valor de `siguiente_cursor` de la página anterior.
-      schema: { type: string, minLength: 1 }
+      schema: { type: string, pattern: "^[A-Za-z0-9-]{1,64}$" }
 
   responses:
     BadRequest:

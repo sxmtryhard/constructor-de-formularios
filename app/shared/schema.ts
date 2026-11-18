@@ -29,6 +29,9 @@ export type ErrorBody = z.infer<typeof ErrorBody>;
 /** Parámetros de paginación con cursor (§9.2): `?limite=20&cursor=<id>`, límite máximo 100. */
 export const PageQuery = z.strictObject({
   limite: z.coerce.number().int().min(1).max(100).default(20),
-  cursor: z.string().min(1).optional(),
+  cursor: z
+    .string()
+    .regex(/^[A-Za-z0-9-]{1,64}$/, "Cursor no válido")
+    .optional(),
 });
 export type PageQuery = z.infer<typeof PageQuery>;

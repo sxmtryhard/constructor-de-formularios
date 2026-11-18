@@ -43,6 +43,7 @@ export interface FormsRepository {
   /** Formularios del autor, más recientes primero; `cursor` = id del último de la página anterior. */
   listByAuthor(autorUid: string, limit: number, cursor: string | undefined): Promise<FormPage>;
   update(id: string, patch: FormPatch): Promise<void>;
+  /** Borra el formulario, su código público, sus versiones y sus respuestas. */
   delete(id: string): Promise<void>;
   saveVersion(formId: string, version: FormVersionRecord): Promise<void>;
   findVersions(formId: string, versions: number[]): Promise<FormVersionRecord[]>;

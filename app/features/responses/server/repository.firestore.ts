@@ -1,6 +1,7 @@
 import { FieldValue, type Firestore, type QueryDocumentSnapshot } from "firebase-admin/firestore";
 import { z } from "zod";
 import { AnswerValue } from "@/features/forms/schema";
+import { parseStored } from "@/shared/server/validation";
 import type { NewResponseRecord, ResponsePage, ResponseRecord, ResponsesRepository } from "./repository";
 
 const FORMS = "formularios";
@@ -14,10 +15,10 @@ const ResponseDoc = z.object({
 });
 
 function toRecord(doc: QueryDocumentSnapshot): ResponseRecord {
-  return { id: doc.id, ...ResponseDoc.parse(doc.data()) };
+  return { id: doc.id, ...parseStored(ResponseDoc, doc.data()) };
 }
 
-/** Respuestas en `formularios/{id}/respuestas`; cada documento leído se valida con Zod. */
+/** Respuestas en `formularios/{id}/respuestas`; cada documento leído se valida con Zod (corrupto → 500). */
 export class FirestoreResponsesRepository implements ResponsesRepository {
   constructor(private readonly db: Firestore) {}
 

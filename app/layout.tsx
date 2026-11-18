@@ -1,6 +1,9 @@
 import type { Metadata } from "next";
+import { cookies } from "next/headers";
 import Link from "next/link";
-import { SessionNav } from "@/features/auth/ui/session-nav";
+import { Suspense } from "react";
+import { SESSION_COOKIE } from "@/features/auth/schema";
+import { SessionNav, SignInLink } from "@/features/auth/ui/session-nav";
 import "./globals.css";
 
 export const metadata: Metadata = {
@@ -9,6 +12,12 @@ export const metadata: Metadata = {
 };
 
 const NAV_LINK = "inline-flex min-h-11 items-center px-2 text-surface underline hover:text-surface-strong";
+
+/** Solo comprueba si EXISTE la cookie de sesión (no la verifica): así las páginas públicas no consultan `/api/auth/yo`. */
+async function SessionSlot() {
+  const cookieStore = await cookies();
+  return <SessionNav hasSessionCookie={cookieStore.has(SESSION_COOKIE)} />;
+}
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
@@ -37,7 +46,9 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
                 </Link>
               </li>
               <li>
-                <SessionNav />
+                <Suspense fallback={<SignInLink />}>
+                  <SessionSlot />
+                </Suspense>
               </li>
             </ul>
           </nav>

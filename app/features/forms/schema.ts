@@ -135,6 +135,13 @@ export const FormList = z.strictObject({
 });
 export type FormList = z.infer<typeof FormList>;
 
+/**
+ * Parámetros de la URL. Un valor con otra forma no puede existir en la base:
+ * la ruta lo trata como inexistente (404) sin consultar Firestore.
+ */
+export const FormIdParam = z.string().regex(/^[A-Za-z0-9-]{1,64}$/);
+export const PublicCodeParam = z.string().regex(/^[a-z0-9]{1,20}$/);
+
 /** `GET /api/f/:codigo`: definición pública, sin datos privados (§9.4). */
 export const PublicForm = z.strictObject({
   codigo: z.string(),

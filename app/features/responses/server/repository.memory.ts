@@ -29,4 +29,9 @@ export class MemoryResponsesRepository implements ResponsesRepository {
   async listAll(formId: string, max: number): Promise<ResponseRecord[]> {
     return structuredClone((this.byForm.get(formId) ?? []).slice(0, max));
   }
+
+  /** Borra las respuestas de un formulario borrado (en Firestore lo hace el borrado recursivo del formulario). */
+  async removeByForm(formId: string): Promise<void> {
+    this.byForm.delete(formId);
+  }
 }

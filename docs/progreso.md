@@ -11,7 +11,14 @@ Lo mantiene el orquestador: se actualiza al cerrar cada feature (spec aprobada �
 - **Pruebas de componentes (2026-11-17):** con la autorización de la persona se instalaron `jsdom`, `@vitejs/plugin-react` y `@testing-library/*` ([ADR-0009](adr/0009-pruebas-de-componentes.md)). Las pruebas están en `app/features/forms/tests/form-renderer.test.tsx` y `app/shared/tests/status.test.tsx`.
 - **§15:** `ia/README.md` (dónde está cada restricción) e `ia/bitacora.md` (entradas en borrador que debe revisar la persona).
 
-- **Revisión de seguridad (2026-11-16):** corregidos el ReDoS (alta: `isSafePattern` ahora prohíbe repetir grupos y limita a 2 cuantificadores sin tope) y la IP del límite de frecuencia (`ipDe`). Quedan, de severidad baja/media: validar `id`/`codigo`/`cursor` de la URL con Zod; que un documento corrupto salga como 500 y no 400; `exigirOrigen` en `DELETE /api/auth/sesion`; borrar la subcolección `respuestas` al borrar un formulario; límite de frecuencia por instancia (documentar o usar el Firewall de Vercel); CSP con `'unsafe-inline'`. ~~Actualizar `next`~~ hecho el 2026-11-17: 16.4.3 → 16.4.6 (el build de 16.4.3 se detenía por una vulnerabilidad conocida). Siguen en `npm audit` alertas en herramientas de desarrollo (picomatch y minimatch, vía vite, vitest y eslint) y en `fast-xml-parser` (vía firebase-admin); solo se quitan con `npm audit fix --force`, que trae cambios incompatibles.
+- **Revisión de seguridad (2026-11-16):** corregidos el ReDoS (alta: `isSafePattern` ahora prohíbe repetir grupos y limita a 2 cuantificadores sin tope) y la IP del límite de frecuencia (`ipDe`). Cerrados el 2026-11-17 (nota en `docs/handoffs/backend-seguridad-bajos.md`):
+- `id`, `codigo` y `cursor` de la URL se validan con Zod (forma inválida → 404; cursor → 400);
+- un documento corrupto da 500 y no 400;
+- `exigirOrigen` en `DELETE /api/auth/sesion`;
+- al borrar un formulario se borran también sus respuestas y versiones (`recursiveDelete`);
+- el límite de frecuencia por instancia quedó documentado (la defensa global es el Firewall de Vercel).
+
+Además, la barra de navegación ya no consulta `/api/auth/yo` sin cookie, así que desaparece el 401 de la consola en las páginas públicas. Sigue abierto: CSP con `'unsafe-inline'`. ~~Actualizar `next`~~ hecho el 2026-11-17: 16.4.3 → 16.4.6 (el build de 16.4.3 se detenía por una vulnerabilidad conocida). Siguen en `npm audit` alertas en herramientas de desarrollo (picomatch y minimatch, vía vite, vitest y eslint) y en `fast-xml-parser` (vía firebase-admin); solo se quitan con `npm audit fix --force`, que trae cambios incompatibles.
 
 ## Decisiones tomadas
 - 2026-11-13 · Se parte de la plantilla `library_agents_job` y se adapta al enunciado ([ADR-0008](adr/0008-adaptacion-al-enunciado.md), en estado *Propuesta*).

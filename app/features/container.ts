@@ -5,7 +5,7 @@ import { createSessionService, type SessionService } from "./auth/server/session
 import { createFormsService, type FormsService } from "./forms/server/forms-service";
 import type { FormsRepository } from "./forms/server/repository";
 import { FirestoreFormsRepository } from "./forms/server/repository.firestore";
-import { MemoryFormsRepository } from "./forms/server/repository.memory";
+import { CascadingMemoryFormsRepository, MemoryFormsRepository } from "./forms/server/repository.memory";
 import type { ResponsesRepository } from "./responses/server/repository";
 import { FirestoreResponsesRepository } from "./responses/server/repository.firestore";
 import { MemoryResponsesRepository } from "./responses/server/repository.memory";
@@ -35,8 +35,13 @@ let rateLimiters: RateLimiters | null = null;
 
 function buildRepositories(): Repositories {
   if (process.env.DATA_BACKEND === "memory") {
-    const forms = new MemoryFormsRepository();
-    const responses = new MemoryResponsesRepository((formId) => forms.incrementResponses(formId));
+    // Las dos se referencian entre sí solo dentro de callbacks, que corren después de construirlas.
+    const forms: MemoryFormsRepository = new CascadingMemoryFormsRepository(
+      (formId: string): Promise<void> => responses.removeByForm(formId),
+    );
+    const responses: MemoryResponsesRepository = new MemoryResponsesRepository(
+      (formId: string): Promise<void> => forms.incrementResponses(formId),
+    );
     return { forms, responses };
   }
   const db = adminDb();

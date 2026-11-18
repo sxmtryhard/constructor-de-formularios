@@ -12,7 +12,14 @@ interface CounterWindow {
 
 const MAX_KEYS = 10_000;
 
-/** Ventana fija en memoria (por instancia del servidor; el tiempo se inyecta). */
+/**
+ * Ventana fija en memoria (por instancia del servidor; el tiempo se inyecta).
+ *
+ * Límite conocido: en Vercel cada instancia serverless tiene su propio `Map`, así que el tope real
+ * es el límite multiplicado por el número de instancias activas (y se reinicia en cada arranque en frío).
+ * Es una defensa local de primer nivel; la defensa global contra abuso es el Firewall de Vercel
+ * (reglas de límite de frecuencia por IP/ruta), configurado fuera de este código.
+ */
 export function createFixedWindowLimiter(options: { limit: number; windowMs: number }): RateLimiter {
   const windows = new Map<string, CounterWindow>();
 

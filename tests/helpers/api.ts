@@ -1,6 +1,6 @@
 import { NextRequest } from "next/server";
 import { createFormsService, type FormsService } from "@/features/forms/server/forms-service";
-import { MemoryFormsRepository } from "@/features/forms/server/repository.memory";
+import { CascadingMemoryFormsRepository, type MemoryFormsRepository } from "@/features/forms/server/repository.memory";
 import { MemoryResponsesRepository } from "@/features/responses/server/repository.memory";
 import { createResponsesService, type ResponsesService } from "@/features/responses/server/responses-service";
 import { createFixedWindowLimiter, type RateLimiter } from "@/shared/server/rate-limit";
@@ -14,6 +14,8 @@ export interface ApiHarness {
   forms: FormsService;
   responses: ResponsesService;
   limiters: { submit: RateLimiter; write: RateLimiter };
+  /** Repositorios en memoria, para comprobar el estado guardado (p. ej. el borrado en cascada). */
+  repos: { forms: MemoryFormsRepository; responses: MemoryResponsesRepository };
 }
 
 export const HOST = "localhost:3000";
@@ -25,7 +27,10 @@ let codeCounter = 0;
 
 /** Crea un banco nuevo (estado vacío) y lo deja como el actual. */
 export function resetHarness(): ApiHarness {
-  const formsRepo = new MemoryFormsRepository();
+  // Igual que `container.ts` con DATA_BACKEND=memory: borrar un formulario borra sus respuestas.
+  const formsRepo: MemoryFormsRepository = new CascadingMemoryFormsRepository(
+    (formId: string): Promise<void> => responsesRepo.removeByForm(formId),
+  );
   const responsesRepo = new MemoryResponsesRepository((formId) => formsRepo.incrementResponses(formId));
   current = {
     forms: createFormsService({
@@ -40,6 +45,7 @@ export function resetHarness(): ApiHarness {
       submit: createFixedWindowLimiter({ limit: 20, windowMs: 60_000 }),
       write: createFixedWindowLimiter({ limit: 60, windowMs: 60_000 }),
     },
+    repos: { forms: formsRepo, responses: responsesRepo },
   };
   return current;
 }

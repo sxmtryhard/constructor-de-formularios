@@ -17,7 +17,7 @@ Un creador inicia sesión, arma un formulario (6 tipos de campo, reglas, condici
 6. Versionado: cada guardado que cambia `campos` cuando `total_respuestas > 0` incrementa `version` y guarda una copia en `formularios/{id}/versiones/{version}`. La versión 1 también se guarda al publicar por primera vez. Cada respuesta guarda su `version`.
 7. Formulario sin publicar o código inexistente → `404`. Pasada la fecha `cierra` → `410`. Despublicar → vuelve a `404` (se conserva el código).
 8. Límite de frecuencia (IA): contador en memoria por IP, 20 envíos por minuto en `POST /api/f/:codigo/respuestas` y 60 escrituras por minuto por usuario en rutas privadas → `429` con `Retry-After`. Es por instancia (en Vercel se recomienda además el Firewall).
-9. Borrar un formulario borra su documento; las respuestas y versiones quedan huérfanas (Firestore no borra subcolecciones). Fuera de alcance limpiarlas.
+9. Borrar un formulario borra también sus respuestas, sus versiones y su código público (IA, revisión de seguridad 2026-11-17). Primero se borran las subcolecciones y al final el documento, así que un fallo a medias deja el formulario existente y el borrado se puede reintentar.
 10. Tabla de respuestas paginada con cursor (20 por página, `limite` máx. 100). El resumen y el CSV usan todas las respuestas (máx. 5000 leídas; si hay más, se avisa).
 
 ## Firestore (camelCase, §9.3)
@@ -35,7 +35,7 @@ Runtime Node.js (el predeterminado). **No** se escribe `export const runtime = "
 | Método y ruta | Auth | Cuerpo / query | Éxito | Errores |
 | --- | --- | --- | --- | --- |
 | `POST /api/auth/sesion` | — (Origin) | `CreateSessionInput` | `204` + cookie `sesion` HttpOnly, Secure (en producción), SameSite=Lax, Path=/, Max-Age 5 días | 400, 401 (token inválido o inicio no reciente), 403 Origin |
-| `DELETE /api/auth/sesion` | — | — | `204`, borra cookie y revoca refresh tokens si había sesión | — |
+| `DELETE /api/auth/sesion` | — (Origin) | — | `204`, borra cookie y revoca refresh tokens si había sesión | 403 Origin |
 | `GET /api/auth/yo` | sesión | — | `200 MeResponse` | 401 |
 | `GET /api/formularios` | sesión | `PageQuery` | `200 FormList` (los del usuario, más recientes primero) | 400, 401 |
 | `POST /api/formularios` | sesión + Origin | `FormInput` | `201 Form` | 400, 401, 403, 429 |
@@ -48,6 +48,8 @@ Runtime Node.js (el predeterminado). **No** se escribe `export const runtime = "
 | `GET /api/formularios/:id/resumen` | sesión | — | `200 FormSummary` | 401, 404 |
 | `GET /api/f/:codigo` | público | — | `200 PublicForm`, `Cache-Control: public, s-maxage=30` | 404, 410 |
 | `POST /api/f/:codigo/respuestas` | público + Origin | `SubmitInput` | `201 SubmitResult` | 400 (con `detalles` por campo), 404, 410, 413 (> 64 KB), 415, 429 |
+
+Parámetros de URL (IA, revisión de seguridad 2026-11-17): `:id` debe cumplir `FormIdParam` y `:codigo` `PublicCodeParam`; si no, 404 como un inexistente. `cursor` con forma inválida → 400. Un documento corrupto en Firestore → 500, no 400.
 
 Autenticación (§9.1): cookie `sesion` verificada con `verifySessionCookie(cookie, true)`, o `Authorization: Bearer <idToken>` con `verifyIdToken`. Origen: en métodos que modifican, la cabecera `Origin` debe coincidir con el host de la petición → si no, 403.
 

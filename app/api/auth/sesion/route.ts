@@ -28,6 +28,8 @@ export async function POST(request: NextRequest) {
 /** Cierra la sesión: revoca los refresh tokens (si había cookie válida) y borra la cookie. */
 export async function DELETE(request: NextRequest) {
   return manejar(async () => {
+    // CSRF: otro sitio no puede cerrar la sesión (y revocar los tokens) de la persona.
+    exigirOrigen(request);
     const cookie = request.cookies.get(SESSION_COOKIE)?.value;
     if (cookie !== undefined && cookie.length > 0) {
       await getSessionService().revokeSession(cookie);

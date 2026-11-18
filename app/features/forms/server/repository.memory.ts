@@ -47,6 +47,11 @@ export class MemoryFormsRepository implements FormsRepository {
       this.codes.delete(found.codigo);
     }
     this.forms.delete(id);
+    for (const key of [...this.versions.keys()]) {
+      if (key.startsWith(`${id}/`)) {
+        this.versions.delete(key);
+      }
+    }
   }
 
   async saveVersion(formId: string, version: FormVersionRecord): Promise<void> {
@@ -86,5 +91,20 @@ export class MemoryFormsRepository implements FormsRepository {
     if (found !== undefined) {
       found.totalRespuestas += 1;
     }
+  }
+}
+
+/**
+ * Variante que, al borrar, avisa a `onDeleted` para borrar lo que vive fuera de este repositorio
+ * (las respuestas, en la feature de respuestas), igual que el borrado recursivo de Firestore.
+ */
+export class CascadingMemoryFormsRepository extends MemoryFormsRepository {
+  constructor(private readonly onDeleted: (formId: string) => Promise<void>) {
+    super();
+  }
+
+  override async delete(id: string): Promise<void> {
+    await super.delete(id);
+    await this.onDeleted(id);
   }
 }

@@ -12,12 +12,23 @@ type SessionState = "cargando" | "con-sesion" | "sin-sesion";
 
 const NAV_LINK = "inline-flex min-h-11 items-center px-2 text-surface underline hover:text-surface-strong";
 
-/** Enlace «Ingresar» o botón «Salir» según la sesión (la consulta `GET /api/auth/yo`). */
-export function SessionNav() {
+interface SessionNavProps {
+  /** Lo calcula el layout en el servidor: si existe la cookie de sesión (HttpOnly, el cliente no la ve). */
+  hasSessionCookie: boolean;
+}
+
+/**
+ * Enlace «Ingresar» o botón «Salir» según la sesión. Sin cookie no hay nada que consultar;
+ * con cookie se confirma con `GET /api/auth/yo` (puede estar vencida o revocada).
+ */
+export function SessionNav({ hasSessionCookie }: SessionNavProps) {
   const router = useRouter();
   const [state, setState] = useState<SessionState>("cargando");
 
   useEffect(() => {
+    if (!hasSessionCookie) {
+      return;
+    }
     let active = true;
     void apiJson("/api/auth/yo", MeResponse).then((result) => {
       if (!active) {
@@ -32,7 +43,7 @@ export function SessionNav() {
     return () => {
       active = false;
     };
-  }, []);
+  }, [hasSessionCookie]);
 
   async function handleSignOut() {
     await apiEmpty("/api/auth/sesion", "DELETE");
@@ -45,13 +56,18 @@ export function SessionNav() {
     router.refresh();
   }
 
-  if (state === "con-sesion") {
+  if (hasSessionCookie && state === "con-sesion") {
     return (
       <button type="button" onClick={handleSignOut} className={`${NAV_LINK} cursor-pointer`}>
         Salir
       </button>
     );
   }
+  return <SignInLink />;
+}
+
+/** Enlace «Ingresar»; también sirve de `fallback` mientras el layout lee la cookie. */
+export function SignInLink() {
   return (
     <Link href="/login" className={NAV_LINK}>
       Ingresar

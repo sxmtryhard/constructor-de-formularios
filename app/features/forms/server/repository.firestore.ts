@@ -1,5 +1,6 @@
 import type { DocumentSnapshot, Firestore } from "firebase-admin/firestore";
 import { z } from "zod";
+import { parseStored } from "@/shared/server/validation";
 import { Field } from "../schema";
 import {
   type FormPage,
@@ -13,6 +14,8 @@ import {
 
 const FORMS = "formularios";
 const VERSIONS = "versiones";
+/** Subcolección de la feature de respuestas; solo se nombra aquí para borrarla junto al formulario. */
+const RESPONSES = "respuestas";
 const CODES = "codigos";
 /** Tope de formularios leídos por autor al listar (se ordena en memoria y no necesita índice compuesto). */
 const MAX_FORMS_PER_AUTHOR = 1000;
@@ -43,10 +46,10 @@ function toRecord(snapshot: DocumentSnapshot): FormRecord | null {
   if (!snapshot.exists) {
     return null;
   }
-  return { id: snapshot.id, ...FormDoc.parse(snapshot.data()) };
+  return { id: snapshot.id, ...parseStored(FormDoc, snapshot.data()) };
 }
 
-/** Repositorio real en Firestore (ADR-0003). Cada documento leído se valida con Zod. */
+/** Repositorio real en Firestore (ADR-0003). Cada documento leído se valida con Zod (corrupto → 500). */
 export class FirestoreFormsRepository implements FormsRepository {
   constructor(private readonly db: Firestore) {}
 
@@ -66,7 +69,7 @@ export class FirestoreFormsRepository implements FormsRepository {
       .where("autorUid", "==", autorUid)
       .limit(MAX_FORMS_PER_AUTHOR)
       .get();
-    const records = snapshot.docs.map((doc) => ({ id: doc.id, ...FormDoc.parse(doc.data()) }));
+    const records = snapshot.docs.map((doc) => ({ id: doc.id, ...parseStored(FormDoc, doc.data()) }));
     return paginateNewestFirst(records, limit, cursor);
   }
 
@@ -76,6 +79,10 @@ export class FirestoreFormsRepository implements FormsRepository {
 
   async delete(id: string): Promise<void> {
     const ref = this.db.collection(FORMS).doc(id);
+    // Las subcolecciones no se borran con su documento padre en Firestore. Van primero: si algo falla,
+    // el formulario sigue existiendo y el borrado se puede reintentar (al revés quedarían huérfanas).
+    await this.db.recursiveDelete(ref.collection(RESPONSES));
+    await this.db.recursiveDelete(ref.collection(VERSIONS));
     await this.db.runTransaction(async (transaction) => {
       const current = toRecord(await transaction.get(ref));
       if (current === null) {
@@ -99,7 +106,7 @@ export class FirestoreFormsRepository implements FormsRepository {
     }
     const collection = this.db.collection(FORMS).doc(formId).collection(VERSIONS);
     const snapshots = await this.db.getAll(...versions.map((version) => collection.doc(String(version))));
-    return snapshots.filter((snapshot) => snapshot.exists).map((snapshot) => VersionDoc.parse(snapshot.data()));
+    return snapshots.filter((snapshot) => snapshot.exists).map((snapshot) => parseStored(VersionDoc, snapshot.data()));
   }
 
   async reserveCode(codigo: string, formId: string): Promise<boolean> {
@@ -117,7 +124,7 @@ export class FirestoreFormsRepository implements FormsRepository {
     if (!snapshot.exists) {
       return null;
     }
-    const { formularioId } = CodeDoc.parse(snapshot.data());
+    const { formularioId } = parseStored(CodeDoc, snapshot.data());
     return this.findById(formularioId);
   }
 }

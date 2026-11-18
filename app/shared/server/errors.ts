@@ -69,6 +69,17 @@ export class UnsupportedMediaTypeError extends DomainError {
   }
 }
 
+/**
+ * Dato guardado que no cumple su esquema (documento corrupto en la base). No es un error de dominio:
+ * `manejar` lo responde como 500 genérico, sin detalles, en vez de como 400 del cliente.
+ */
+export class CorruptDataError extends Error {
+  constructor(message = "Dato guardado no válido") {
+    super(message);
+    this.name = "CorruptDataError";
+  }
+}
+
 /** 429: demasiadas peticiones; `retryAfter` en segundos. */
 export class TooManyRequestsError extends DomainError {
   readonly retryAfter: number;

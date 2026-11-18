@@ -6,6 +6,12 @@ Lo mantiene el orquestador: se actualiza al cerrar cada feature (spec aprobada �
 - **Construido (2026-11-16):** MVP F0–F14 según `docs/specs/F0-F14-mvp.md` (aprobada sin ronda de preguntas a pedido de la persona; las decisiones marcadas «(IA)» están por revisar). API completa, constructor, formulario público, respuestas, resumen y CSV. `npm run check:full` en verde (190 pruebas). Notas en `docs/handoffs/`.
 - **Desplegado (2026-11-17):** <https://constructor-de-formularios.vercel.app> con las 7 variables de Firebase en Vercel. Verificado: `/api/auth/yo` → 401 y `/api/f/zzzzzzzzzz` → 404. La persona probó el flujo con sesión en producción (2026-11-17). **Falta rotar la clave privada**, que quedó expuesta en el chat.
 - **F15 hecho (2026-11-17):** `openapi.yaml` (10 rutas, todos los códigos de error) y la colección `bruno/` (36 peticiones: sesión, éxito, 400, 401, 403 y 404 por ruta principal). La colección no se ha ejecutado aún contra producción: necesita el correo y la contraseña de la persona.
+- **F17, los 3 retos de excelencia (2026-11-17):** la persona eligió estos tres:
+  - axe dentro de Vitest y RTL ([ADR-0010](adr/0010-axe-en-vitest.md));
+  - navegación accesible (anunciador de rutas);
+  - SEO avanzado e impresión.
+
+  Spec en `docs/specs/F17-retos.md` y evidencias en `calidad/CALIDAD.md` §5. Falta el PDF de impresión de las respuestas, que hace la persona.
 - **Pruebas 413/415/429 (2026-11-17):** `app/features/responses/tests/limits-routes.test.ts` (13 casos).
 - **F17 parcial (2026-11-17):** `calidad/CALIDAD.md` con capturas a 360, 768 y 1024 px de las páginas públicas, cabeceras y TTFB. Faltan Lighthouse, axe, el validador W3C, la revisión manual, las páginas con sesión y elegir los 3 retos.
 - **Pruebas de componentes (2026-11-17):** con la autorización de la persona se instalaron `jsdom`, `@vitejs/plugin-react` y `@testing-library/*` ([ADR-0009](adr/0009-pruebas-de-componentes.md)). Las pruebas están en `app/features/forms/tests/form-renderer.test.tsx` y `app/shared/tests/status.test.tsx`.

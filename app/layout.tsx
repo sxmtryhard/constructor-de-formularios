@@ -4,11 +4,23 @@ import Link from "next/link";
 import { Suspense } from "react";
 import { SESSION_COOKIE } from "@/features/auth/schema";
 import { SessionNav, SignInLink } from "@/features/auth/ui/session-nav";
+import { RouteAnnouncer } from "@/shared/ui/route-announcer";
+import { SITE_DESCRIPTION, SITE_NAME, SITE_URL } from "@/shared/ui/site";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: { template: "%s · Constructor de formularios", default: "Constructor de formularios" },
-  description: "Crea formularios arrastrando campos, publícalos con un enlace y revisa las respuestas.",
+  metadataBase: new URL(SITE_URL),
+  title: { template: `%s · ${SITE_NAME}`, default: SITE_NAME },
+  description: SITE_DESCRIPTION,
+  openGraph: {
+    type: "website",
+    locale: "es_CO",
+    siteName: SITE_NAME,
+    title: SITE_NAME,
+    description: SITE_DESCRIPTION,
+    url: "/",
+  },
+  robots: { index: true, follow: true },
 };
 
 const NAV_LINK = "inline-flex min-h-11 items-center px-2 text-surface underline hover:text-surface-strong";
@@ -61,6 +73,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
             Constructor de formularios dinámicos · Trabajo final de Desarrollo Web
           </p>
         </footer>
+        <RouteAnnouncer />
       </body>
     </html>
   );

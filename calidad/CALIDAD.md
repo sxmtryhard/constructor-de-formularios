@@ -88,13 +88,40 @@ Mejoras ya aplicadas para estas métricas:
 
 Observación pendiente: en las páginas públicas, el navegador registra un `401` en la consola porque la barra de navegación consulta `/api/auth/yo` sin sesión. Lighthouse puede bajar «Buenas prácticas» por esos errores de consola.
 
-## 5 · Retos de excelencia (elegir al menos 3)
+## 5 · Retos de excelencia
 
-| Reto | Estado | Evidencia y cómo reproducir |
-| --- | --- | --- |
-| Pruebas de accesibilidad de componentes con axe dentro de Vitest y RTL | ⏳ requiere instalar `jsdom`, `@testing-library/*` y `axe-core` (ADR) | `npm test` |
-| Prueba en 3 anchos con Playwright y 0 violaciones de axe | ⏳ requiere `@playwright/test` y `@axe-core/playwright` (ADR) | `npx playwright test` |
-| 100 en las cuatro categorías de Lighthouse en 3 páginas | ⏳ medir | informes en `calidad/lighthouse/` |
+La persona eligió estos tres el 2026-11-17. Su spec es [`docs/specs/F17-retos.md`](../docs/specs/F17-retos.md).
+
+### Reto A · Pruebas de accesibilidad de componentes con axe dentro de Vitest y RTL
+- **Qué es:** `axe-core` se ejecuta sobre los componentes renderizados con React Testing Library ([ADR-0010](../docs/adr/0010-axe-en-vitest.md)). El ayudante está en `tests/helpers/axe.ts`.
+- **Casos con 0 violaciones:**
+  - `FormRenderer` con los 6 tipos de campo, también con todos obligatorios;
+  - `FormRenderer` con los errores de validación visibles;
+  - `ErrorPanel`;
+  - `LoadingSkeleton`;
+  - el anunciador de rutas.
+- **Límite:** jsdom no calcula estilos, así que el contraste lo cubren `tests/project/palette-contrast.test.ts` y Lighthouse.
+- **Reproducir:** `npx vitest run app/features/forms/tests/form-renderer.a11y.test.tsx app/shared/tests/status.a11y.test.tsx app/shared/tests/route-announcer.test.tsx`
+- **Comprobado que detecta fallos:** un componente con un campo sin etiqueta y un botón vacío sí produce violaciones.
+
+### Reto B · Navegación accesible: foco y título anunciados en cada cambio de ruta
+- **Qué es:** `app/shared/ui/route-announcer.tsx`, montado una vez en `app/layout.tsx`. En cada navegación del lado del cliente mueve el foco al `<h1>` de la página nueva (o a `<main>`) y anuncia «Página: <título>» en una región `aria-live="polite"`. En la carga inicial no hace nada.
+- **Evidencia automática:** `app/shared/tests/route-announcer.test.tsx`.
+- **Reproducir en vivo:** abre `/`, pulsa el enlace «Ingresar» de la navegación y, en la consola, ejecuta `document.activeElement.textContent` (debe dar «Ingresar»). Con NVDA se oye «Página: Ingresar · Constructor de formularios».
+
+### Reto C · SEO avanzado e impresión
+- **SEO:**
+  - `app/sitemap.ts` genera `/sitemap.xml` con `/` y `/login`;
+  - `app/robots.ts` genera `/robots.txt`, que bloquea `/api/`, `/formularios` y `/f/`;
+  - Open Graph y `metadataBase` en el layout;
+  - `noindex` en `/f/**` y `/formularios/**`;
+  - JSON-LD `WebApplication` en la página de inicio.
+- **Impresión:** `@media print` en `app/globals.css`. Oculta la navegación, el pie y los botones, imprime negro sobre blanco, pone bordes en la tabla y no corta las filas entre páginas.
+- **Reproducir:**
+  - `curl https://constructor-de-formularios.vercel.app/robots.txt`
+  - `curl https://constructor-de-formularios.vercel.app/sitemap.xml`
+  - Validar el JSON-LD de `/` en <https://validator.schema.org/>.
+  - En `/formularios/[id]/respuestas`, pulsar Ctrl+P y guardar la vista previa como PDF en `calidad/impresion-respuestas.pdf` (⏳ lo hace la persona, porque necesita sesión).
 
 ## Cómo reproducir
 
